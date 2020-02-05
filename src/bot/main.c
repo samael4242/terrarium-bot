@@ -4,12 +4,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include <unistd.h>
-#include <telebot.h>
+#include <telebot/telebot.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-
+#include <log.h>
 
 #define SIZE_OF_ARRAY(array) (sizeof(array)/sizeof(array[0]))
 #define MAX_STRING_SIZE 4096
@@ -27,38 +27,38 @@ int main(int argc, char *argv[])
 	telebot_message_t message;
 	telebot_update_t *updates;
 
-	printf("Welcome to Terrarium bot\n");
+	pr_info("Welcome to Terrarium bot\n");
 
 	fp = fopen(".token", "r");
 	if (fp == NULL) {
-		printf("Failed to open token file\n");
+		pr_err("Failed to open token file\n");
 		goto err;
 	}
 
 	if (fscanf(fp, "%s", token) == 0) {
-		printf("Reading token failed");
+		pr_err("Reading token failed");
 		goto close_fd;
 	}
 
-	printf("Token: %s\n", token);
+	pr_debug("Token: %s\n", token);
 
 	fclose(fp);
 
 	if (telebot_create(&handle, token) != TELEBOT_ERROR_NONE) {
-		printf("Telebot create failed\n");
+		pr_err("Telebot create failed\n");
 		goto err;
 	}
 
 
 	if (telebot_get_me(handle, &me) != TELEBOT_ERROR_NONE) {
-		printf("Failed to get bot information\n");
+		pr_err("Failed to get bot information\n");
 		telebot_destroy(handle);
 		goto err;
 	}
 
-	printf("ID: %d\n", me->id);
-	printf("First Name: %s\n", me->first_name);
-	printf("User Name: %s\n", me->username);
+	pr_debug("ID: %d\n", me->id);
+	pr_debug("First Name: %s\n", me->first_name);
+	pr_debug("User Name: %s\n", me->username);
 
 	telebot_free_me(me);
 
@@ -70,13 +70,13 @@ int main(int argc, char *argv[])
 		if (ret != TELEBOT_ERROR_NONE)
 			continue;
 
-		printf("Number of updates: %d\n", count);
+		pr_info("Number of updates: %d\n", count);
 
 		for (index = 0;index < count; index++) {
 			message = updates[index].message;
-			printf("=======================================================\n");
-			printf("%s: %s \n", message.from->first_name, message.text);
-			printf("=======================================================\n");\
+			pr_info("=======================================================\n");
+			pr_info("%s: %s \n", message.from->first_name, message.text);
+			pr_info("=======================================================\n");\
 			if (message.text) {
 				if (strstr(message.text, "/start")) {
 					snprintf(str, SIZE_OF_ARRAY(str), "Hello %s",
@@ -92,7 +92,7 @@ int main(int argc, char *argv[])
 			ret = telebot_send_message(handle, message.chat->id, str, "",
 						   false, false, 0, "");
 			if (ret != TELEBOT_ERROR_NONE) {
-				printf("Failed to send message: %d \n", ret);
+				pr_err("Failed to send message: %d \n", ret);
 			}
 			offset = updates[index].update_id + 1;
 		}
