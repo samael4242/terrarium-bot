@@ -10,10 +10,14 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <log.h>
+#include <DHT.h>
+#include <bcm2835.h>
 
 #define SIZE_OF_ARRAY(array) (sizeof(array)/sizeof(array[0]))
 #define MAX_STRING_SIZE 4096
 #define TOKEN_PATH ".token"
+
+#define GPROUP_CAHT_ID -1001316572508
 
 int main(int argc, char *argv[])
 {
@@ -21,6 +25,8 @@ int main(int argc, char *argv[])
 	char str[MAX_STRING_SIZE] = {0,};
 	char token[MAX_STRING_SIZE] = {0,};
 	FILE *fp = NULL;
+	struct DHTdata data1;
+	struct DHTdata data2;
 	telebot_user_t *me;
 	telebot_handler_t handle;
 	telebot_error_e ret;
@@ -62,6 +68,8 @@ int main(int argc, char *argv[])
 
 	telebot_free_me(me);
 
+	bcm2835_init();
+
 	while (1) {
 		/* busy wait */
 		sleep(1);
@@ -81,10 +89,28 @@ int main(int argc, char *argv[])
 				if (strstr(message.text, "/start")) {
 					snprintf(str, SIZE_OF_ARRAY(str), "Hello %s",
 						 message.from->first_name);
-				}
-				else {
-
-						snprintf(str, SIZE_OF_ARRAY(str), "RE:%s", message.text);
+				} else  if (strstr(message.text, "/temperature")) {
+temp_retry1:
+					if (!getDHTdata(4, &data1))
+						goto temp_retry1;
+temp_retry2:
+					if (!getDHTdata(16, &data2))
+						goto temp_retry2;
+					snprintf(str, SIZE_OF_ARRAY(str), "T: %.1lf *C T: %.1lf *C",
+							data1.temerature,
+							data2.temerature);
+				} else  if (strstr(message.text, "/humidity")) {
+hum_retry1:
+					if (!getDHTdata(4, &data1))
+						goto hum_retry1;
+hum_retry2:
+					if (!getDHTdata(16, &data2))
+						goto hum_retry2;
+					snprintf(str, SIZE_OF_ARRAY(str), "H: %.1lf%% H: %.1lf%%",
+							data1.humidity,
+							data2.humidity);
+				} else {
+					snprintf(str, SIZE_OF_ARRAY(str), "RE:%s", message.text);
 				}
 			} else {
 				snprintf(str, SIZE_OF_ARRAY(str), "Could not get message");
