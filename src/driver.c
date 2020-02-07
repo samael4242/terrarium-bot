@@ -3,12 +3,13 @@
  * for more ditails
  * */
 
-#include <DHT.h>
+#include <driver.h>
 #include <bcm2835.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <log.h>
+#include <common.h>
 
 #define TIME_BIT_ONE_LEVEL 200 /* ~70us; */
 #define MAX_BIT_COUNTER 40 /* 16 bit RH data + 16 bit T data + 8 bit check sum */
@@ -18,9 +19,20 @@
 #define MAX_CHAR (1 << 8)
 #define DEVIDER 10.
 
-#define SIZE_OF_ARRAY(array) (sizeof(array)/sizeof(array[0]))
+int driver_init()
+{
+#ifdef DEBUG
+	bcm2835_set_debug(1);
+#endif
+	return bcm2835_init();
+}
 
-static void setDHTmetering(struct DHTdata *ddata)
+int driver_close()
+{
+	return bcm2835_close();
+}
+
+static void set_DHT_metering(struct DHTdata *ddata)
 {
 	double humidity = 0;
 	double temperature = 0;
@@ -45,7 +57,7 @@ static void setDHTmetering(struct DHTdata *ddata)
 	ddata->humidity = humidity;
 }
 
-int getDHTdata(int pin, struct DHTdata *ddata)
+int get_DHT_data(int pin, struct DHTdata *ddata)
 {
 	int tiks = 0;
 	int cur_pin_level = HIGH;
@@ -62,7 +74,7 @@ int getDHTdata(int pin, struct DHTdata *ddata)
 	 * According to datasheet pull low dawn data bus
 	 * at leat 10ms but in reality if pull down less
 	 * then 460ms after several tries sensor will not
-	 * responce. */
+	  responce. */
 	bcm2835_gpio_write(pin, HIGH);
 	usleep(460000); /* 460 ms */
 	bcm2835_gpio_write(pin, LOW);
@@ -122,12 +134,12 @@ exit:
 		return -1;
 	}
 
-	setDHTmetering(ddata);
+	set_DHT_metering(ddata);
 
 	return 0;
 }
 
-#ifdef TEST
+#ifdef TEST_DHT
 int main()
 {
 	struct DHTdata metering;
@@ -135,13 +147,13 @@ int main()
 	bcm2835_init();
 	pr_info("GPIO4\n");
 retry1:
-	if (!getDHTdata(4, &metering))
+	if (!get_DHT_data(4, &metering))
 		pr_info("T: %.1lf *C, H: %.1lf\n", metering.temerature, metering.humidity);
 	else
 		goto retry1;
 	pr_info("GPIO16\n");
 retry2:
-	if (!getDHTdata(16, &metering))
+	if (!get_DHT_data(16, &metering))
 		pr_info("T: %.1lf *C, H: %.1lf\n", metering.temerature, metering.humidity);
 	else
 		goto retry2;

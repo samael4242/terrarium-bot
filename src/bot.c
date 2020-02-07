@@ -1,39 +1,29 @@
-#include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
 #include <stdbool.h>
-#include <string.h>
 #include <unistd.h>
+#include <bot.h>
 #include <telebot/telebot.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
+#include <driver.h>
+#include <common.h>
 #include <log.h>
-#include <DHT.h>
-#include <bcm2835.h>
 
-#define SIZE_OF_ARRAY(array) (sizeof(array)/sizeof(array[0]))
 #define MAX_STRING_SIZE 4096
 #define TOKEN_PATH ".token"
 
 #define GPROUP_CAHT_ID -1001316572508
 
-int main(int argc, char *argv[])
+int bot_init(struct bot_handle *handle)
 {
-	int index, count, offset = 1;
-	char str[MAX_STRING_SIZE] = {0,};
-	char token[MAX_STRING_SIZE] = {0,};
-	FILE *fp = NULL;
-	struct DHTdata data1;
-	struct DHTdata data2;
 	telebot_user_t *me;
-	telebot_handler_t handle;
-	telebot_error_e ret;
-	telebot_message_t message;
-	telebot_update_t *updates;
+	telebot_handler_t *tb_handle = NULL;
+	FILE *fp = NULL;
+	char token[MAX_STRING_SIZE] = {0,};
 
 	pr_info("Welcome to Terrarium bot\n");
+
+	tb_handle = malloc(sizeof(telebot_handler_t));
+	if (tb_handle == NULL)
+		goto err;
 
 	fp = fopen(".token", "r");
 	if (fp == NULL) {
@@ -50,15 +40,15 @@ int main(int argc, char *argv[])
 
 	fclose(fp);
 
-	if (telebot_create(&handle, token) != TELEBOT_ERROR_NONE) {
+	if (telebot_create(tb_handle, token) != TELEBOT_ERROR_NONE) {
 		pr_err("Telebot create failed\n");
 		goto err;
 	}
 
 
-	if (telebot_get_me(handle, &me) != TELEBOT_ERROR_NONE) {
+	if (telebot_get_me(*tb_handle, &me) != TELEBOT_ERROR_NONE) {
 		pr_err("Failed to get bot information\n");
-		telebot_destroy(handle);
+		telebot_destroy(*tb_handle);
 		goto err;
 	}
 
@@ -68,13 +58,45 @@ int main(int argc, char *argv[])
 
 	telebot_free_me(me);
 
-	bcm2835_init();
+	handle->private_data = tb_handle;
+	driver_init();
+
+	return 0;
+
+close_fd:
+	fclose(fp);
+err:
+	free(tb_handle);
+	return -1;
+}
+
+int bot_close(struct bot_handle *handle)
+{
+	telebot_handler_t *tb_handle = 
+		handle->private_data;
+
+	telebot_destroy(*tb_handle);
+	free(tb_handle);
+	driver_close();
+	return 0;
+}
+
+int bot_process_message(struct bot_handle *handle)
+{
+	int index, count, offset = 1;
+	char str[MAX_STRING_SIZE] = {0,};
+	telebot_error_e ret;
+	telebot_message_t message;
+	telebot_update_t *updates;
+	telebot_handler_t *tb_handle = handle->private_data;
+	struct DHTdata data1;
+	struct DHTdata data2;
 
 	while (1) {
 		/* busy wait */
 		sleep(1);
 
-		ret = telebot_get_updates(handle, offset, 20, 0, NULL, 0, &updates, &count);
+		ret = telebot_get_updates(*tb_handle, offset, 20, 0, NULL, 0, &updates, &count);
 		if (ret != TELEBOT_ERROR_NONE)
 			continue;
 
@@ -91,20 +113,20 @@ int main(int argc, char *argv[])
 						 message.from->first_name);
 				} else  if (strstr(message.text, "/temperature")) {
 temp_retry1:
-					if (!getDHTdata(4, &data1))
+					if (!get_DHT_data(4, &data1))
 						goto temp_retry1;
 temp_retry2:
-					if (!getDHTdata(16, &data2))
+					if (!get_DHT_data(16, &data2))
 						goto temp_retry2;
 					snprintf(str, SIZE_OF_ARRAY(str), "T: %.1lf *C T: %.1lf *C",
 							data1.temerature,
 							data2.temerature);
 				} else  if (strstr(message.text, "/humidity")) {
 hum_retry1:
-					if (!getDHTdata(4, &data1))
+					if (!get_DHT_data(4, &data1))
 						goto hum_retry1;
 hum_retry2:
-					if (!getDHTdata(16, &data2))
+					if (!get_DHT_data(16, &data2))
 						goto hum_retry2;
 					snprintf(str, SIZE_OF_ARRAY(str), "H: %.1lf%% H: %.1lf%%",
 							data1.humidity,
@@ -115,7 +137,7 @@ hum_retry2:
 			} else {
 				snprintf(str, SIZE_OF_ARRAY(str), "Could not get message");
 			}
-			ret = telebot_send_message(handle, message.chat->id, str, "",
+			ret = telebot_send_message(*tb_handle, message.chat->id, str, "",
 						   false, false, 0, "");
 			if (ret != TELEBOT_ERROR_NONE) {
 				pr_err("Failed to send message: %d \n", ret);
@@ -126,12 +148,6 @@ hum_retry2:
 		telebot_free_updates(updates, count);
 	}
 
-	telebot_destroy(handle);
 
 	return 0;
-
-close_fd:
-	fclose(fp);
-err:
-	return -1;
 }

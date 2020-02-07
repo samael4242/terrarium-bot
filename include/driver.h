@@ -7,6 +7,9 @@ struct DHTdata {
 	char val[5];
 };
 
-int getDHTdata(int pin, struct DHTdata *ddata);
+int driver_init();
+int driver_close();
+
+int get_DHT_data(int pin, struct DHTdata *ddata);
 
 #endif /* DHGT_H */
