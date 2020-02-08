@@ -5,13 +5,14 @@
 
 #include <driver.h>
 #include <bcm2835.h>
+#include <sys/time.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <log.h>
 #include <common.h>
 
-#define TIME_BIT_ONE_LEVEL 200 /* ~70us; */
+#define DILAY_FOR_ONE 70
 #define MAX_BIT_COUNTER 40 /* 16 bit RH data + 16 bit T data + 8 bit check sum */
 #define MAX_TIKS_COUNT 1000 /* Timeout */
 #define RSP_SIGNAL_COUNT 3
@@ -57,6 +58,13 @@ static void set_DHT_metering(struct DHTdata *ddata)
 	ddata->humidity = humidity;
 }
 
+static unsigned long long current_timestamp() {
+	struct timeval tv;
+
+	gettimeofday(&tv, NULL);
+	return 1000000 * tv.tv_sec + tv.tv_usec;
+}
+
 int get_DHT_data(int pin, struct DHTdata *ddata)
 {
 	int tiks = 0;
@@ -65,27 +73,33 @@ int get_DHT_data(int pin, struct DHTdata *ddata)
 	int i = 0;
 	char checksum = 0;
 	char *data = ddata->val;
+	unsigned long long timestamp_start = 0;
+	unsigned long long timestamp_end = 0;
+	unsigned long long diff = 0;
 
 	memset(ddata->val, 0, sizeof(ddata->val));
 
 	bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_OUTP);
 
-	/* Setup sensor for data read.
-	 * According to datasheet pull low dawn data bus
-	 * at leat 10ms but in reality if pull down less
-	 * then 460ms after several tries sensor will not
-	  responce. */
 	bcm2835_gpio_write(pin, HIGH);
-	usleep(460000); /* 460 ms */
+	delay(10);
 	bcm2835_gpio_write(pin, LOW);
-	usleep(30000); /* 30us */
+	delay(1);
 
 	bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_INPT);
+
+	tiks = 0;
 
 	/* Skip sensor`s response signal */
 	for (i = 0; i < RSP_SIGNAL_COUNT; i++) {
 		while (bcm2835_gpio_lev(pin) == cur_pin_level) {
 			usleep(1);
+			tiks++;
+
+			if (tiks > MAX_TIKS_COUNT) {
+				pr_debug("Could not setup sensor\n");
+				return -1;
+			}
 		}
 
 		cur_pin_level = bcm2835_gpio_lev(pin);
@@ -101,7 +115,9 @@ int get_DHT_data(int pin, struct DHTdata *ddata)
 	for (i = 0; i < MAX_BIT_COUNTER *2; i++) {
 		tiks = 0;
 
-		while (bcm2835_gpio_lev(pin) == cur_pin_level){
+		timestamp_start = current_timestamp();
+
+		while (bcm2835_gpio_lev(pin) == cur_pin_level) {
 			tiks++;
 
 			/*  Data have been read */
@@ -109,13 +125,16 @@ int get_DHT_data(int pin, struct DHTdata *ddata)
 				goto exit;
 		};
 
+		timestamp_end = current_timestamp();
+		diff = timestamp_end - timestamp_start;
+
 		/*  Skip bit separator */
 		cur_pin_level = bcm2835_gpio_lev(pin);
 		if (cur_pin_level == HIGH)
 			continue;
 
 		data[bit_counter >> 3] <<= 1;
-		if (tiks > TIME_BIT_ONE_LEVEL)
+		if (diff >= DILAY_FOR_ONE)
 			data[bit_counter >> 3] |= 1;
 
 		bit_counter++;
