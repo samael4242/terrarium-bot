@@ -1,10 +1,11 @@
 CC=gcc
 MD=mkdir
 CFLAGS=-c -Wall -I./include -I./thirdparty/bcm2835/include
-LDFLAGS=-ltelebot
+LDFLAGS=-ltelebot -pthread
 SOURCES=\
 	src/core.c \
 	src/driver.c \
+	src/device.c \
 	src/bot.c
 STATIC_LIB=./thirdparty/bcm2835/lib/libbcm2835.a
 
