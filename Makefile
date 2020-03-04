@@ -6,7 +6,8 @@ SOURCES=\
 	src/core.c \
 	src/driver.c \
 	src/device.c \
-	src/bot.c
+	src/bot.c \
+	src/bcm2835.c
 STATIC_LIB=./thirdparty/bcm2835/lib/libbcm2835.a
 
 BUILD_DIR=./build

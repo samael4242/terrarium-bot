@@ -82,6 +82,7 @@ static void get_mitering(struct dev_temp *temp, struct dev_hum *hum)
 	temp->ch2 = ddata.temerature;
 	hum->ch2 = ddata.humidity;
 
+	driver_close();
 }
 
 static int init_mitering(struct dev_handler *handle)
@@ -151,7 +152,7 @@ static void *mitering_thread(void *args)
 		terminate = handle->terminate;
 		pthread_mutex_unlock(&handle->lock);
 
-		sleep(10);
+	sleep(10);
 
 		temp_ch1 = temp_ch2 = 0;
 		hum_ch1 = hum_ch2 = 0;
@@ -169,11 +170,12 @@ int device_init(struct instance *inst)
 		return -1;
 
 	pthread_mutex_init(&handle->lock, 0);
+
 	driver_init();
 
 	handle->terminate = false;
 	init_mitering(handle);
-	pthread_create(&handle->mitering_thread, NULL, 
+	pthread_create(&handle->mitering_thread, NULL,
 			mitering_thread, handle);
 
 	inst->priv_data = handle;

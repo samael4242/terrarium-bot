@@ -4,13 +4,14 @@
  * */
 
 #include <driver.h>
-#include <bcm2835.h>
 #include <sys/time.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <log.h>
 #include <common.h>
+
+#include "driverAPI.h"
 
 #define DILAY_FOR_ONE 70
 #define MAX_BIT_COUNTER 40 /* 16 bit RH data + 16 bit T data + 8 bit check sum */
@@ -22,15 +23,12 @@
 
 int driver_init()
 {
-#ifdef DEBUG
-	bcm2835_set_debug(1);
-#endif
-	return bcm2835_init();
+	return init_HW();
 }
 
 int driver_close()
 {
-	return bcm2835_close();
+	return close_HW();
 }
 
 static void set_DHT_metering(struct DHTdata *ddata)
@@ -68,7 +66,7 @@ static unsigned long long current_timestamp() {
 int get_DHT_data(int pin, struct DHTdata *ddata)
 {
 	int tiks = 0;
-	int cur_pin_level = HIGH;
+	int cur_pin_level = DRIVER_HIGH;
 	int bit_counter = 0;
 	int i = 0;
 	char checksum = 0;
@@ -79,20 +77,20 @@ int get_DHT_data(int pin, struct DHTdata *ddata)
 
 	memset(ddata->val, 0, sizeof(ddata->val));
 
-	bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_OUTP);
+	set_pin_mode(pin, DRIVER_OUTPUT);
 
-	bcm2835_gpio_write(pin, HIGH);
-	delay(10);
-	bcm2835_gpio_write(pin, LOW);
-	delay(1);
+	write_pin_level(pin, DRIVER_HIGH);
+	driver_delay(10);
+	write_pin_level(pin, DRIVER_LOW);
+	driver_delay(1);
 
-	bcm2835_gpio_fsel(pin, BCM2835_GPIO_FSEL_INPT);
+	set_pin_mode(pin, DRIVER_INPUT);
 
 	tiks = 0;
 
 	/* Skip sensor`s response signal */
 	for (i = 0; i < RSP_SIGNAL_COUNT; i++) {
-		while (bcm2835_gpio_lev(pin) == cur_pin_level) {
+		while (read_pin_level(pin) == cur_pin_level) {
 			usleep(1);
 			tiks++;
 
@@ -102,7 +100,7 @@ int get_DHT_data(int pin, struct DHTdata *ddata)
 			}
 		}
 
-		cur_pin_level = bcm2835_gpio_lev(pin);
+		cur_pin_level = read_pin_level(pin);
 	}
 
 	/*Data to read:
@@ -117,7 +115,7 @@ int get_DHT_data(int pin, struct DHTdata *ddata)
 
 		timestamp_start = current_timestamp();
 
-		while (bcm2835_gpio_lev(pin) == cur_pin_level) {
+		while (read_pin_level(pin) == cur_pin_level) {
 			tiks++;
 
 			/*  Data have been read */
@@ -129,8 +127,8 @@ int get_DHT_data(int pin, struct DHTdata *ddata)
 		diff = timestamp_end - timestamp_start;
 
 		/*  Skip bit separator */
-		cur_pin_level = bcm2835_gpio_lev(pin);
-		if (cur_pin_level == HIGH)
+		cur_pin_level = read_pin_level(pin);
+		if (cur_pin_level == DRIVER_HIGH)
 			continue;
 
 		data[bit_counter >> 3] <<= 1;
