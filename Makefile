@@ -1,8 +1,8 @@
 CC=gcc
 MD=mkdir
-CFLAGS=-c -Wall -I./include -I./thirdparty/bcm2835/include
-PLATFORM=wiringpi
-#PLATFORM=bcm2835
+CFLAGS=-c -Wall -I./include
+#PLATFORM=wiringpi
+PLATFORM=bcm2835
 LDFLAGS=-ltelebot -pthread
 SOURCES=\
 	src/core.c \
@@ -17,6 +17,7 @@ ifeq ($(PLATFORM), wiringpi)
 else
 	SOURCES+=src/bcm2835.c
 	STATIC_LIB=./thirdparty/bcm2835/lib/libbcm2835.a
+	CFLAGS+=-I./thirdparty/bcm2835/include
 endif
 
 BUILD_DIR=./build
