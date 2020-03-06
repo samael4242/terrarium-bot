@@ -81,8 +81,6 @@ static void get_mitering(struct dev_temp *temp, struct dev_hum *hum)
 
 	temp->ch2 = ddata.temerature;
 	hum->ch2 = ddata.humidity;
-
-	driver_close();
 }
 
 static int init_mitering(struct dev_handler *handle)
