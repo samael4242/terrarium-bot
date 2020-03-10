@@ -51,7 +51,7 @@ static void get_mitering(struct dev_temp *temp, struct dev_hum *hum)
 			pr_warn("Could not get sensor data\n");
 			break;
 		}
-
+		sleep(10);
 		counter++;
 	} while (ret);
 
@@ -75,7 +75,7 @@ static void get_mitering(struct dev_temp *temp, struct dev_hum *hum)
 			pr_warn("Could not get sensor data\n");
 			break;
 		}
-
+		sleep(10);
 		counter++;
 	} while (ret);
 
@@ -149,8 +149,6 @@ static void *mitering_thread(void *args)
 
 		terminate = handle->terminate;
 		pthread_mutex_unlock(&handle->lock);
-
-	sleep(10);
 
 		temp_ch1 = temp_ch2 = 0;
 		hum_ch1 = hum_ch2 = 0;

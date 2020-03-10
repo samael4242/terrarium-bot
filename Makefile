@@ -1,8 +1,8 @@
 CC=gcc
 MD=mkdir
 CFLAGS=-c -Wall -I./include
-#PLATFORM=wiringpi
-PLATFORM=bcm2835
+PLATFORM=wiringpi
+#PLATFORM=bcm2835
 LDFLAGS=-ltelebot -pthread
 SOURCES=\
 	src/core.c \

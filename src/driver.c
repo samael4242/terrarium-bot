@@ -80,9 +80,9 @@ int get_DHT_data(int pin, struct DHTdata *ddata)
 	set_pin_mode(pin, DRIVER_OUTPUT);
 
 	write_pin_level(pin, DRIVER_HIGH);
-	driver_delay(10);
+	driver_delay(500);
 	write_pin_level(pin, DRIVER_LOW);
-	driver_delay(1);
+	driver_delay(20);
 
 	set_pin_mode(pin, DRIVER_INPUT);
 
@@ -91,7 +91,6 @@ int get_DHT_data(int pin, struct DHTdata *ddata)
 	/* Skip sensor`s response signal */
 	for (i = 0; i < RSP_SIGNAL_COUNT; i++) {
 		while (read_pin_level(pin) == cur_pin_level) {
-			usleep(1);
 			tiks++;
 
 			if (tiks > MAX_TIKS_COUNT) {
