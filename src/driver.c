@@ -56,7 +56,8 @@ static void set_DHT_metering(struct DHTdata *ddata)
 	ddata->humidity = humidity;
 }
 
-static unsigned long long current_timestamp() {
+static unsigned long long current_timestamp()
+{
 	struct timeval tv;
 
 	gettimeofday(&tv, NULL);
@@ -151,6 +152,26 @@ exit:
 	}
 
 	set_DHT_metering(ddata);
+
+	return 0;
+}
+
+int relay_off(int pin)
+{
+	set_pin_mode(pin, DRIVER_OUTPUT);
+	write_pin_level(pin, DRIVER_HIGH);
+
+	driver_delay(10);
+
+	return 0;
+}
+
+int relay_on(int pin)
+{
+	set_pin_mode(pin, DRIVER_OUTPUT);
+	write_pin_level(pin, DRIVER_LOW);
+
+	driver_delay(10);
 
 	return 0;
 }

@@ -12,9 +12,17 @@
 
 #define GPROUP_CAHT_ID -1001316572508
 
+enum bot_state {
+	STATE_GET_RELAY_CANNEL,
+	STATE_GET_RELAY_STATE,
+	STATE_NONE,
+};
+
 struct bot_data {
 	struct instance dev_inst;
 	telebot_handler_t tb_handle;
+
+	enum bot_state state;
 };
 
 int bot_init(struct bot_handle *handle)
@@ -86,12 +94,13 @@ int bot_close(struct bot_handle *handle)
 
 int bot_process_message(struct bot_handle *handle)
 {
-	int index, count, offset = 1;
+	int index, count, offset = 1, state_done = 1;
 	char str[MAX_STRING_SIZE] = {0,};
 	telebot_error_e ret;
 	telebot_message_t message;
 	telebot_update_t *updates;
 	struct bot_data *data = handle->private_data;
+
 
 	while (1) {
 		/* busy wait */
@@ -103,11 +112,67 @@ int bot_process_message(struct bot_handle *handle)
 
 		pr_info("Number of updates: %d\n", count);
 
-		for (index = 0;index < count; index++) {
+		for (index = 0; index < count; index++) {
 			message = updates[index].message;
 			pr_info("=======================================================\n");
 			pr_info("%s: %s \n", message.from->first_name, message.text);
-			pr_info("=======================================================\n");\
+			pr_info("=======================================================\n");
+			if (data->state != STATE_NONE) {
+				if (data->state == STATE_GET_RELAY_CANNEL) {
+					state_done = 0;
+
+					if (strstr(message.text, "/1")) {
+						state_done = 1;
+						data->dev_inst.pin = RELAY_1;
+					} else if (strstr(message.text, "/2")) {
+						state_done = 1;
+						data->dev_inst.pin = RELAY_2;
+					} else if (strstr(message.text, "/3")) {
+						state_done = 1;
+						data->dev_inst.pin = RELAY_3;
+					} else {
+						snprintf(str, SIZE_OF_ARRAY(str),
+								"Specify relay num /1, /2 or /3");
+					}
+
+					if (state_done) {
+						snprintf(str, SIZE_OF_ARRAY(str),
+								"Specify relay state to set /off or /on");
+						data->state = STATE_GET_RELAY_STATE;
+					}
+				} else if (data->state == STATE_GET_RELAY_STATE) {
+					state_done = 0;
+
+					if (strstr(message.text, "/on")) {
+						device_relay_on(&data->dev_inst);
+						state_done = 1;
+					} else if (strstr(message.text, "/off")) {
+						device_relay_off(&data->dev_inst);
+						state_done = 1;
+					} else {
+						snprintf(str, SIZE_OF_ARRAY(str),
+								"Please /off or /on");
+					}
+
+					if (state_done) {
+						snprintf(str, SIZE_OF_ARRAY(str),
+								"Done");
+						data->state = STATE_NONE;
+					}
+				} else {
+					snprintf(str, SIZE_OF_ARRAY(str), "Could not get message");
+				}
+
+				ret = telebot_send_message(data->tb_handle, message.chat->id, str, "",
+							   false, false, 0, "");
+				if (ret != TELEBOT_ERROR_NONE) {
+					pr_err("Failed to send message: %d \n", ret);
+				}
+
+				offset = updates[index].update_id + 1;
+				continue;
+			}
+
 			if (message.text) {
 				if (strstr(message.text, "/start")) {
 					snprintf(str, SIZE_OF_ARRAY(str), "Hello %s",
@@ -122,6 +187,9 @@ int bot_process_message(struct bot_handle *handle)
 					snprintf(str, SIZE_OF_ARRAY(str), "H: %.1lf%% H: %.1lf%%",
 							data->dev_inst.humidity.ch1,
 							data->dev_inst.humidity.ch2);
+				} else if (strstr(message.text, "/relay")) {
+					snprintf(str, SIZE_OF_ARRAY(str), "Specify relay to change state");
+					data->state = STATE_GET_RELAY_CANNEL;
 				} else {
 					snprintf(str, SIZE_OF_ARRAY(str), "RE:%s", message.text);
 				}

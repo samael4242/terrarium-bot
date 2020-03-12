@@ -10,6 +10,10 @@
 #define DHT_CH1 4
 #define DHT_CH2 16
 
+#define RELAY_CH1 26
+#define RELAY_CH2 20
+#define RELAY_CH3 21
+
 #define SIZE_OF_POOL 5
 
 #define MAX_RETRY_NUM 100
@@ -222,4 +226,28 @@ void device_get_humidity(struct instance *inst)
 	inst->humidity.ch1 = handle->hum_ch1;
 	inst->humidity.ch2 = handle->hum_ch2;
 	pthread_mutex_unlock(&handle->lock);
+}
+
+static int inst2channel(enum relay_channel channel)
+{
+	switch (channel) {
+		case RELAY_1:
+			return RELAY_CH1;
+		case RELAY_2:
+			return RELAY_CH2;
+		case RELAY_3:
+			return RELAY_CH3;
+		default:
+			return RELAY_INVALID;
+	}
+}
+
+int device_relay_off(struct instance *inst)
+{
+	return  relay_off(inst2channel(inst->pin));
+}
+
+int device_relay_on(struct instance *inst)
+{
+	return relay_on(inst2channel(inst->pin));
 }
