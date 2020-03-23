@@ -25,7 +25,7 @@ struct bot_data {
 	enum bot_state state;
 };
 
-int bot_init(struct bot_handle *handle)
+int bot_init(struct bot_handle *handle, struct arguments *bot_args)
 {
 	telebot_user_t *me;
 	struct bot_data *data = NULL;
@@ -38,10 +38,13 @@ int bot_init(struct bot_handle *handle)
 	if (data == NULL)
 		goto err;
 
-	fp = fopen(".token", "r");
+	fp = fopen(bot_args->token_path, "r");
 	if (fp == NULL) {
-		pr_err("Failed to open token file\n");
-		goto err;
+		fp = fopen(TOKEN_PATH, "r");
+		if (fp == NULL) {
+			pr_err("Failed to open token file\n");
+			goto err;
+		}
 	}
 
 	if (fscanf(fp, "%s", token) == 0) {
@@ -188,7 +191,8 @@ int bot_process_message(struct bot_handle *handle)
 							data->dev_inst.humidity.ch1,
 							data->dev_inst.humidity.ch2);
 				} else if (strstr(message.text, "/relay")) {
-					snprintf(str, SIZE_OF_ARRAY(str), "Specify relay to change state");
+					snprintf(str, SIZE_OF_ARRAY(str),
+							"Specify relay num /1, /2 or /3");
 					data->state = STATE_GET_RELAY_CANNEL;
 				} else {
 					snprintf(str, SIZE_OF_ARRAY(str), "RE:%s", message.text);

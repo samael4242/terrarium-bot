@@ -40,6 +40,13 @@ $(EXECUTABLE): $(OBJECTS)
 $(CREATE_DIRS):
 	$(MD) -p $(BUILD_DIR)/$(SRC_DIR)
 	cp ./service/.token $(BUILD_DIR)
+	cp ./service/terrarium-bot.service $(BUILD_DIR)
 
 clean:
 	rm -rf $(BUILD_DIR)
+
+install:
+	install -d /etc/terrarium-bot
+	cp $(BUILD_DIR)/.token /etc/terrarium-bot/token
+	cp $(BUILD_DIR)/terrarium-bot.service /etc/systemd/system/terrarium-bot.service
+	cp $(BUILD_DIR)/terrarium-bot /usr/bin/terrarium-bot

@@ -136,17 +136,17 @@ static void *mitering_thread(void *args)
 		handle->hum_ch1 = hum_ch1;
 		handle->hum_ch2 = hum_ch2;
 
-		pr_debug("T: %.1lf *C, T: %.1lf *C\n",
+		pr_debug("[CURRENT] T: %.1lf *C, T: %.1lf *C\n",
 				temp_ch1,
 				temp_ch2);
-		pr_debug("H: %.1lf %%, H: %.1lf %%\n",
+		pr_debug("[CURRENT] H: %.1lf %%, H: %.1lf %%\n",
 				hum_ch1,
 				hum_ch2);
 		pr_debug("=====\n");
-		pr_debug("T: %.1lf *C, T: %.1lf *C\n",
+		pr_debug("[POOL DATA] T: %.1lf *C, T: %.1lf *C\n",
 				handle->temp_pool[counter].ch1,
 				handle->temp_pool[counter].ch2);
-		pr_debug("H: %.1lf %%, H: %.1lf %%\n",
+		pr_debug("[POOL DATA] H: %.1lf %%, H: %.1lf %%\n",
 				handle->hum_pool[counter].ch1,
 				handle->hum_pool[counter].ch2);
 		pr_debug("=====================================\n");

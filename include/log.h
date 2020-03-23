@@ -17,7 +17,7 @@
 #define LOG_DEBUG "D: "   /* debugging */
 
 #define log(prefix, fmt, ...) \
-	(void)(fprintf(stdout, prefix pr_fmt(fmt), ##__VA_ARGS__))
+	(void)(fprintf(stderr, prefix pr_fmt(fmt), ##__VA_ARGS__))
 
 #define pr_err(...) __extension__(log(LOG_ERR, ##__VA_ARGS__))
 #define pr_warn(...) __extension__(log(LOG_WARNING, ##__VA_ARGS__))
