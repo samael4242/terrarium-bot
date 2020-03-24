@@ -47,6 +47,11 @@ clean:
 
 install:
 	install -d /etc/terrarium-bot
+	#In case sservice is already running
+	systemctl stop terrarium-bot.service
+	systemctl disable terrarium-bot.service
 	cp $(BUILD_DIR)/.token /etc/terrarium-bot/token
 	cp $(BUILD_DIR)/terrarium-bot.service /etc/systemd/system/terrarium-bot.service
 	cp $(BUILD_DIR)/terrarium-bot /usr/bin/terrarium-bot
+	systemctl enable terrarium-bot.service
+	systemctl start terrarium-bot.service
