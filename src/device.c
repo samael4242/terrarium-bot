@@ -16,7 +16,7 @@
 
 #define SIZE_OF_POOL 5
 
-#define MAX_RETRY_NUM 100
+#define MAX_RETRY_NUM 10
 
 struct dev_handler {
 	bool terminate;
@@ -53,6 +53,8 @@ static void get_mitering(struct dev_temp *temp, struct dev_hum *hum)
 			ret = 1;
 		if (counter > MAX_RETRY_NUM) {
 			pr_warn("Could not get sensor data\n");
+			ddata.humidity = 0;
+			ddata.temerature = 0;
 			break;
 		}
 		sleep(10);
@@ -77,6 +79,8 @@ static void get_mitering(struct dev_temp *temp, struct dev_hum *hum)
 			ret = 1;
 		if (counter > MAX_RETRY_NUM) {
 			pr_warn("Could not get sensor data\n");
+			ddata.humidity = 0;
+			ddata.temerature = 0;
 			break;
 		}
 		sleep(10);
@@ -111,12 +115,6 @@ static void *mitering_thread(void *args)
 	pr_debug("mitering_thread init\n");
 
 	do {
-		get_mitering(&handle->temp_pool[counter],
-				&handle->hum_pool[counter]);
-
-		counter++;
-		counter %= SIZE_OF_POOL;
-
 		for (i = 0; i < SIZE_OF_POOL; i++) {
 			temp_ch1 += handle->temp_pool[i].ch1;
 			temp_ch2 += handle->temp_pool[i].ch2;
@@ -156,6 +154,12 @@ static void *mitering_thread(void *args)
 
 		temp_ch1 = temp_ch2 = 0;
 		hum_ch1 = hum_ch2 = 0;
+
+		get_mitering(&handle->temp_pool[counter],
+				&handle->hum_pool[counter]);
+
+		counter++;
+		counter %= SIZE_OF_POOL;
 	} while (!terminate);
 
 	return NULL;

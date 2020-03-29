@@ -1,6 +1,6 @@
 CC=gcc
 MD=mkdir
-CFLAGS=-c -Wall -I./include
+CFLAGS=-c -Wall -I./include -DDHT21
 PLATFORM=wiringpi
 #PLATFORM=bcm2835
 LDFLAGS=-ltelebot -pthread

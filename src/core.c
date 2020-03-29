@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
 	struct argp bot_argp = {bot_options, parse_bot_opt,
 		args_bot_doc, bot_doc};
 	struct arguments bot_arguments = {
-		.token_path = NULL 
+		.token_path = NULL
 	};
 
 	argp_parse(&bot_argp, argc, argv, 0, 0, &bot_arguments);

@@ -3,6 +3,7 @@
  * for more ditails
  * */
 
+#define DEBUG
 #include <driver.h>
 #include <sys/time.h>
 #include <stdio.h>
@@ -16,7 +17,11 @@
 #define DILAY_FOR_ONE 70
 #define MAX_BIT_COUNTER 40 /* 16 bit RH data + 16 bit T data + 8 bit check sum */
 #define MAX_TIKS_COUNT 1000 /* Timeout */
-#define RSP_SIGNAL_COUNT 3
+#ifdef DHT21
+#define RSP_SIGNAL_COUNT 5
+#elif defined DHT22
+#define RSP_SIGNAL_COUNT 2
+#endif
 #define SIGN_BIT (1 << 7)
 #define MAX_CHAR (1 << 8)
 #define DEVIDER 10.
@@ -37,15 +42,11 @@ static void set_DHT_metering(struct DHTdata *ddata)
 	double temperature = 0;
 	char *data = ddata->val;
 
-	humidity = data[0];
-	humidity *= MAX_CHAR;
-	humidity += data[1];
+	humidity = (data[0] << 8) + data[1];
 	/* get integer and fractional part */
 	humidity /= DEVIDER;
 
-	temperature = data[2] & ~SIGN_BIT;
-	temperature *= MAX_CHAR;
-	temperature += data[3];
+	temperature = ((data[2] & ~SIGN_BIT) << 8) + data[3];
 	/* get integer and fractional part */
 	temperature /= DEVIDER;
 
@@ -95,7 +96,7 @@ int get_DHT_data(int pin, struct DHTdata *ddata)
 			tiks++;
 
 			if (tiks > MAX_TIKS_COUNT) {
-				pr_debug("Could not setup sensor\n");
+				pr_debug("Could not setup sensor: pin - %i\n", pin);
 				return -1;
 			}
 		}

@@ -73,6 +73,9 @@ int bot_init(struct bot_handle *handle, struct arguments *bot_args)
 
 	telebot_free_me(me);
 	device_init(&data->dev_inst);
+
+	data->state = STATE_NONE;
+
 	handle->private_data = data;
 
 	return 0;
