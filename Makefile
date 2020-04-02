@@ -3,12 +3,13 @@ MD=mkdir
 CFLAGS=-c -Wall -I./include -DDHT21
 PLATFORM=wiringpi
 #PLATFORM=bcm2835
-LDFLAGS=-ltelebot -pthread
+LDFLAGS=-ltelebot -pthread -lrt
 SOURCES=\
 	src/core.c \
 	src/driver.c \
 	src/device.c \
-	src/bot.c
+	src/bot.c \
+	src/timer.c
 
 
 ifeq ($(PLATFORM), wiringpi)
