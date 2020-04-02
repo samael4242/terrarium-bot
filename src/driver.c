@@ -3,7 +3,6 @@
  * for more ditails
  * */
 
-#define DEBUG
 #include <driver.h>
 #include <sys/time.h>
 #include <stdio.h>
@@ -16,7 +15,7 @@
 
 #define DILAY_FOR_ONE 70
 #define MAX_BIT_COUNTER 40 /* 16 bit RH data + 16 bit T data + 8 bit check sum */
-#define MAX_TIKS_COUNT 1000 /* Timeout */
+#define MAX_TIKS_COUNT 3000 /* Timeout */
 #ifdef DHT21
 #define RSP_SIGNAL_COUNT 5
 #elif defined DHT22

@@ -7,8 +7,8 @@
 #define DEBUG
 #include <log.h>
 
-#define DHT_CH1 4
-#define DHT_CH2 16
+#define DHT_CH1 22
+#define DHT_CH2 27
 
 #define RELAY_CH1 26
 #define RELAY_CH2 20
@@ -174,7 +174,6 @@ int device_init(struct instance *inst)
 		return -1;
 
 	pthread_mutex_init(&handle->lock, 0);
-
 	driver_init();
 
 	handle->terminate = false;
