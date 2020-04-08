@@ -6,6 +6,7 @@
 #include <unistd.h>
 #define DEBUG
 #include <log.h>
+#include "timerHandler.h"
 
 #define DHT_CH1 22
 #define DHT_CH2 27
@@ -18,14 +19,27 @@
 
 #define MAX_RETRY_NUM 10
 
+
+#define OFF_HOUR 18
+#define OFF_MIN 0
+#define OFF_SEC 0
+
+#define ON_HOUR 6
+#define ON_MIN 0
+#define ON_SEC 0
+
 struct dev_handler {
 	bool terminate;
 
 	pthread_mutex_t lock;
 	pthread_t mitering_thread;
+	pthread_t htimer_thread;
 
 	struct dev_temp temp_pool[SIZE_OF_POOL];
 	struct dev_hum hum_pool[SIZE_OF_POOL];
+
+	enum relay_channel pin_htimer;
+	struct timer_handler thndl;
 
 	double temp_ch1;
 	double temp_ch2;
@@ -165,6 +179,57 @@ static void *mitering_thread(void *args)
 	return NULL;
 }
 
+static void relay_cb(void *ctx, enum timer_state state)
+{
+	(void)ctx;
+
+	switch(state) {
+		case TIMER_OFF:
+			pr_debug("relay cb: OFF\n");
+			relay_off(RELAY_CH3);
+			break;
+		case TIMER_ON:
+			pr_debug("relay cb: ON\n");
+			relay_on(RELAY_CH3);
+			break;
+		case TIMER_ERROR:
+		default:
+			pr_err("Could not handle state\n");
+	}
+}
+
+static void *htimer_thread(void *args)
+{
+	struct dev_handler *handle = args;
+	struct timer_handler *thndl = &handle->thndl;
+	bool terminate = false;
+
+	memset(thndl, 0, sizeof(struct timer_handler));
+
+	thndl->on_time.tm_hour = ON_HOUR;
+	thndl->on_time.tm_min = ON_MIN;
+	thndl->on_time.tm_sec = ON_SEC;
+
+	thndl->off_time.tm_hour = OFF_HOUR;
+	thndl->off_time.tm_min = OFF_MIN;
+	thndl->off_time.tm_sec = OFF_SEC;
+
+	timer_handler_init(thndl, relay_cb, NULL);
+
+	pr_debug("htimer_thread init\n");
+
+	while (!terminate) {
+		pthread_mutex_lock(&handle->lock);
+		terminate = handle->terminate;
+		pthread_mutex_unlock(&handle->lock);
+		sleep(100);
+	};
+
+	timer_handler_close(thndl);
+
+	return NULL;
+}
+
 int device_init(struct instance *inst)
 {
 	struct dev_handler *handle = NULL;
@@ -180,6 +245,8 @@ int device_init(struct instance *inst)
 	init_mitering(handle);
 	pthread_create(&handle->mitering_thread, NULL,
 			mitering_thread, handle);
+	pthread_create(&handle->htimer_thread, NULL,
+			htimer_thread, handle);
 
 	inst->priv_data = handle;
 
@@ -195,6 +262,7 @@ int device_close(struct instance *inst)
 	pthread_mutex_unlock(&handle->lock);
 
 	pthread_join(handle->mitering_thread, 0);
+	pthread_join(handle->htimer_thread, 0);
 
 	pthread_mutex_destroy(&handle->lock);
 	free(handle);

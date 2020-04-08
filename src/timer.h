@@ -6,6 +6,7 @@
 struct timer_instance{
 	int hours;
 	int minutes;
+	int seconds;
 	void *priv_data;
 };
 

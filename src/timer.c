@@ -14,7 +14,6 @@
 #define SECONDS_IN_MINUTE 60
 #define MINUTES_IN_HOURS 60
 
-
 struct timer_data {
 	struct itimerspec trigger;
 	timer_t timerid;
@@ -44,6 +43,7 @@ static int to_seconds(struct timer_instance *inst)
 
 	seconds = inst->minutes * SECONDS_IN_MINUTE;
 	seconds += inst->hours * MINUTES_IN_HOURS * SECONDS_IN_MINUTE;
+	seconds += inst->seconds;
 
 	return seconds;
 }
@@ -114,19 +114,29 @@ static void test_timer_cb(void *ctx)
 
 int main()
 {
-	struct timer_instance inst;
-	char str[] = "TIMER DONE!!!";
+	struct timer_instance inst1;
+	struct timer_instance inst2;
+	char str1[] = "TIMER1 DONE!!!";
+	char str2[] = "TIMER2 DONE!!!";
 
-	inst.hours = 0;
-	inst.minutes = 1;
+	inst1.hours = 0;
+	inst1.minutes = 1;
+	inst1.seconds = 0;
 
-	timer_init(&inst, test_timer_cb, str);
+	inst2.hours = 0;
+	inst2.minutes = 2;
+	inst2.seconds = 0;
+
+	timer_init(&inst1, test_timer_cb, str1);
+	timer_init(&inst2, test_timer_cb, str2);
 	print_time();
-	set_timer(&inst, true);
+	set_timer(&inst1, true);
+	set_timer(&inst2, true);
 
 	sleep(181);
 	print_time();
 
-	timer_close(&inst);
+	timer_close(&inst1);
+	timer_close(&inst2);
 }
 #endif /* TIMER_TEST */

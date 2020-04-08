@@ -9,7 +9,8 @@ SOURCES=\
 	src/driver.c \
 	src/device.c \
 	src/bot.c \
-	src/timer.c
+	src/timer.c \
+	src/timerHandler.c
 
 
 ifeq ($(PLATFORM), wiringpi)
